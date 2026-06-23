@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#4F378B">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="/styles.css">
+  <title>Vista Worship — Admin Panel</title>
+  <style>
+    /* Admin-specific styles */
+    .admin-header {
+      background: linear-gradient(135deg, var(--md-sys-color-primary-container), var(--md-sys-color-secondary-container));
+      padding: 20px 16px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .admin-header-info { flex: 1; min-width: 0; }
+    .form-section {
+      background: var(--md-sys-color-surface-container-low);
+      border-radius: var(--md-sys-shape-corner-large);
+      margin: 8px;
+      padding: 16px;
+      border: 1px solid var(--md-sys-color-outline-variant);
+    }
+    .form-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--md-sys-color-on-surface);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .field-group {
+      margin-bottom: 16px;
+    }
+    .field-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--md-sys-color-primary);
+      letter-spacing: 0.4px;
+      margin-bottom: 6px;
+      display: block;
+    }
+    .field-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--md-sys-color-outline);
+      border-radius: var(--md-sys-shape-corner-small);
+      background: var(--md-sys-color-surface);
+      color: var(--md-sys-color-on-surface);
+      font-family: 'Google Sans', sans-serif;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.15s;
+      box-sizing: border-box;
+    }
+    .field-input:focus {
+      border-color: var(--md-sys-color-primary);
+      border-width: 2px;
+      padding: 11px 13px;
+    }
+    .field-helper {
+      font-size: 11px;
+      color: var(--md-sys-color-on-surface-variant);
+      margin-top: 4px;
+    }
+    .events-list-section {
+      margin: 8px;
+    }
+    .month-group-header {
+      padding: 8px 4px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--md-sys-color-primary);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .event-card-actions {
+      display: flex;
+      gap: 8px;
+      padding: 8px 12px;
+      justify-content: flex-end;
+    }
+    .btn-sm {
+      height: 32px;
+      padding: 0 12px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: var(--md-sys-shape-corner-full);
+      border: none;
+      cursor: pointer;
+      font-family: 'Google Sans', sans-serif;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+    .btn-edit {
+      background: var(--md-sys-color-secondary-container);
+      color: var(--md-sys-color-on-secondary-container);
+    }
+    .btn-delete {
+      background: var(--md-sys-color-error-container);
+      color: var(--md-sys-color-on-error-container);
+    }
+    .event-detail-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 6px 12px;
+      font-size: 13px;
+      color: var(--md-sys-color-on-surface-variant);
+    }
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      padding: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .filter-bar::-webkit-scrollbar { display: none; }
+    /* Login overlay */
+    #loginOverlay {
+      position: fixed;
+      inset: 0;
+      background: var(--md-sys-color-background);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .login-card {
+      background: var(--md-sys-color-surface-container-high);
+      border-radius: 28px;
+      padding: 32px 24px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: var(--md-sys-elevation-3);
+    }
+    /* Access Denied */
+    #accessDeniedOverlay {
+      position: fixed;
+      inset: 0;
+      background: var(--md-sys-color-background);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .access-denied-card {
+      background: var(--md-sys-color-error-container);
+      border-radius: 28px;
+      padding: 32px 24px;
+      width: 100%;
+      max-width: 340px;
+      text-align: center;
+      color: var(--md-sys-color-on-error-container);
+    }
+    /* Floating save button */
+    .floating-actions {
+      position: sticky;
+      bottom: 0;
+      background: var(--md-sys-color-surface-container-low);
+      border-top: 1px solid var(--md-sys-color-outline-variant);
+      padding: 12px 16px;
+      display: flex;
+      gap: 8px;
+      z-index: 50;
+    }
+    /* Form mode indicator */
+    .edit-mode-banner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--md-sys-color-tertiary-container);
+      color: var(--md-sys-color-on-tertiary-container);
+      border-radius: var(--md-sys-shape-corner-medium);
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+    .status-field {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--md-sys-color-on-surface-variant);
+      margin-top: 4px;
+    }
+    /* Stats bar */
+    .stats-bar {
+      display: flex;
+      gap: 8px;
+      padding: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .stat-card {
+      flex-shrink: 0;
+      background: var(--md-sys-color-surface-container);
+      border-radius: var(--md-sys-shape-corner-medium);
+      padding: 12px 16px;
+      min-width: 100px;
+      text-align: center;
+      border: 1px solid var(--md-sys-color-outline-variant);
+    }
+    .stat-number {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--md-sys-color-primary);
+    }
+    .stat-label {
+      font-size: 11px;
+      color: var(--md-sys-color-on-surface-variant);
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Login Overlay ──────────────────────────────── -->
+<div id="loginOverlay">
+  <div class="login-card">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="width:64px;height:64px;background:var(--md-sys-color-primary-container);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px">
+        <span class="material-symbols-rounded icon-filled" style="font-size:36px;color:var(--md-sys-color-primary)">admin_panel_settings</span>
+      </div>
+      <div class="md-headline-small" style="font-weight:500">Admin Sign In</div>
+      <div class="md-body-medium" style="color:var(--md-sys-color-on-surface-variant);margin-top:4px">
+        Vista Worship Planner
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Email Address</label>
+      <input class="field-input" type="email" id="loginEmail" placeholder="admin@example.com" autocomplete="email">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Password</label>
+      <div style="position:relative">
+        <input class="field-input" type="password" id="loginPassword" placeholder="Enter password" autocomplete="current-password" style="padding-right:48px">
+        <button id="togglePass" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--md-sys-color-on-surface-variant);padding:4px">
+          <span class="material-symbols-rounded" style="font-size:20px">visibility</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="loginError" style="color:var(--md-sys-color-error);font-size:13px;margin-bottom:12px;display:none;align-items:center;gap:6px">
+      <span class="material-symbols-rounded" style="font-size:16px">error</span>
+      <span id="loginErrorMsg"></span>
+    </div>
+
+    <button class="btn-filled w-full" id="loginBtn" style="height:48px;font-size:16px;justify-content:center">
+      <span class="material-symbols-rounded" style="font-size:20px">login</span>
+      Sign In
+    </button>
+
+    <div style="margin-top:16px;text-align:center">
+      <a href="/index.html" class="btn-text" style="color:var(--md-sys-color-on-surface-variant);font-size:13px;text-decoration:none">
+        ← Back to App
+      </a>
+    </div>
+
+    <div id="loginLoader" style="display:none;text-align:center;margin-top:12px">
+      <div class="linear-progress"><div class="linear-progress-bar"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Access Denied Overlay ──────────────────────── -->
+<div id="accessDeniedOverlay" style="display:none">
+  <div class="access-denied-card">
+    <span class="material-symbols-rounded icon-filled" style="font-size:64px;display:block;margin-bottom:16px">gpp_bad</span>
+    <div style="font-size:22px;font-weight:600;margin-bottom:8px">Access Denied</div>
+    <div style="font-size:14px;opacity:0.9;margin-bottom:24px;line-height:1.5">
+      Your account is not authorized to access this admin panel. Redirecting you back to the app...
+    </div>
+    <div class="linear-progress"><div class="linear-progress-bar"></div></div>
+  </div>
+</div>
+
+<!-- ── Main Admin App ─────────────────────────────── -->
+<div id="adminApp" style="display:none;max-width:480px;margin:0 auto;min-height:100vh;background:var(--md-sys-color-background)">
+
+  <!-- Admin Header -->
+  <div class="admin-header">
+    <div style="width:48px;height:48px;background:var(--md-sys-color-primary);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <span class="material-symbols-rounded icon-filled" style="color:white;font-size:24px">church</span>
+    </div>
+    <div class="admin-header-info">
+      <div style="font-size:18px;font-weight:600;color:var(--md-sys-color-on-primary-container)">Service Planner</div>
+      <div style="font-size:12px;color:var(--md-sys-color-on-primary-container);opacity:0.8" id="adminEmailDisplay"></div>
+    </div>
+    <div>
+      <div class="admin-badge" style="margin-bottom:6px">
+        <span class="material-symbols-rounded" style="font-size:14px">verified</span>
+        Admin
+      </div>
+    </div>
+    <button class="icon-btn" id="signOutBtn" title="Sign Out">
+      <span class="material-symbols-rounded">logout</span>
+    </button>
+  </div>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-card">
+      <div class="stat-number" id="statTotal">—</div>
+      <div class="stat-label">Total Events</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="statUpcoming">—</div>
+      <div class="stat-label">Upcoming</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="statWithMedia">—</div>
+      <div class="stat-label">With Audio</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="statWithSlides">—</div>
+      <div class="stat-label">With Slides</div>
+    </div>
+  </div>
+
+  <!-- ── Event Form ─────────────────────────────────── -->
+  <div class="form-section">
+    <div class="form-title">
+      <span class="material-symbols-rounded icon-filled text-primary">edit_calendar</span>
+      <span id="formTitle">Add Service Event</span>
+    </div>
+
+    <!-- Edit mode banner -->
+    <div class="edit-mode-banner" id="editModeBanner" style="display:none">
+      <span class="material-symbols-rounded icon-filled" style="font-size:20px">edit</span>
+      <div>
+        <div>Editing event for <strong id="editDateLabel"></strong></div>
+        <div style="font-size:11px;opacity:0.8">Save to update or Cancel to discard changes</div>
+      </div>
+      <button class="icon-btn" id="cancelEditBtn" style="margin-left:auto;width:32px;height:32px">
+        <span class="material-symbols-rounded" style="font-size:18px">close</span>
+      </button>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Service Date *</label>
+      <input class="field-input" type="date" id="fieldDate" required>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Sermon / Service Title *</label>
+      <input class="field-input" type="text" id="fieldTitle" placeholder="e.g. Walking in Faith">
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Preacher / Speaker</label>
+      <input class="field-input" type="text" id="fieldPreacher" placeholder="e.g. Pastor John Doe">
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Main Scripture Verse</label>
+      <input class="field-input" type="text" id="fieldVerse" placeholder="e.g. Hebrews 11:1">
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Google Drive Audio Link</label>
+      <input class="field-input" type="url" id="fieldAudio" placeholder="https://drive.google.com/file/d/...">
+      <div class="field-helper">Paste the shareable Google Drive link to the MP3 file</div>
+      <div class="status-field" id="audioStatus" style="display:none">
+        <span class="material-symbols-rounded" style="font-size:14px">check_circle</span>
+        <span>Drive link detected ✓</span>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Presentation Embed Link</label>
+      <input class="field-input" type="url" id="fieldSlide" placeholder="https://www.canva.com/design/.../view?embed">
+      <div class="field-helper">Canva embed URL or Google Slides embed URL (use "Publish to web" → "Embed")</div>
+    </div>
+
+    <!-- Floating Action Buttons -->
+    <div class="floating-actions" style="position:relative;border-radius:var(--md-sys-shape-corner-medium);border:none;margin-top:8px">
+      <button class="btn-tonal" id="clearFormBtn" style="flex:1;justify-content:center">
+        <span class="material-symbols-rounded" style="font-size:20px">clear</span>
+        Clear
+      </button>
+      <button class="btn-filled" id="saveEventBtn" style="flex:2;justify-content:center">
+        <span class="material-symbols-rounded" style="font-size:20px">save</span>
+        <span id="saveBtnLabel">Save Event</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Events List ─────────────────────────────── -->
+  <div class="events-list-section">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 8px 4px">
+      <div style="font-size:16px;font-weight:600;color:var(--md-sys-color-on-surface);display:flex;align-items:center;gap:8px">
+        <span class="material-symbols-rounded icon-filled text-primary">event_note</span>
+        Scheduled Events
+      </div>
+      <button class="icon-btn" id="refreshBtn" title="Refresh">
+        <span class="material-symbols-rounded">refresh</span>
+      </button>
+    </div>
+
+    <!-- Month Filter -->
+    <div class="filter-bar" id="monthFilterBar"></div>
+
+    <!-- Loading indicator -->
+    <div id="eventsLoading" style="padding:24px;text-align:center">
+      <div class="linear-progress" style="max-width:200px;margin:0 auto"><div class="linear-progress-bar"></div></div>
+      <div style="font-size:13px;color:var(--md-sys-color-on-surface-variant);margin-top:12px">Loading events...</div>
+    </div>
+
+    <!-- Events list -->
+    <div id="eventsList" style="padding-bottom:24px"></div>
+  </div>
+
+</div>
+
+<!-- ── Delete Confirm Dialog ──────────────────────── -->
+<div id="deleteDialog" class="dialog-scrim hidden">
+  <div class="dialog">
+    <div class="dialog-icon" style="color:var(--md-sys-color-error)">
+      <span class="material-symbols-rounded icon-filled" style="font-size:40px">delete_forever</span>
+    </div>
+    <div class="dialog-title" style="color:var(--md-sys-color-error)">Delete Event?</div>
+    <div class="dialog-content" id="deleteDialogText">
+      This will permanently delete the event. This action cannot be undone.
+    </div>
+    <div class="dialog-actions">
+      <button class="btn-text" id="cancelDeleteBtn">Cancel</button>
+      <button class="btn-filled" id="confirmDeleteBtn" style="background:var(--md-sys-color-error)">
+        <span class="material-symbols-rounded" style="font-size:18px">delete</span>
+        Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase + Admin Logic -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore, collection, doc, setDoc, getDoc, getDocs,
+    deleteDoc, onSnapshot, query, orderBy, Timestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import {
+    getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  // 🔥 REPLACE WITH YOUR FIREBASE CONFIG:
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const ADMIN_EMAIL = 'buenavistaaglinaodanny@gmail.com';
+  const COLLECTION = 'calendar_events';
+
+  let app, db, auth;
+  let allEvents = [];
+  let editingDate = null;
+  let deleteTargetDate = null;
+  let activeMonthFilter = null;
+  let unsubscribeEvents = null;
+
+  // ── Firebase Init ─────────────────────────────────
+  try {
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
+  } catch(e) {
+    console.error('[Firebase] Init error:', e);
+    showSnack('Firebase initialization failed. Check your config.', 'error', 6000);
+  }
+
+  // ── Auth State Guard ──────────────────────────────
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      // Show login
+      document.getElementById('loginOverlay').style.display = 'flex';
+      document.getElementById('adminApp').style.display = 'none';
+      return;
+    }
+    if (user.email !== ADMIN_EMAIL) {
+      // Access denied
+      document.getElementById('loginOverlay').style.display = 'none';
+      document.getElementById('accessDeniedOverlay').style.display = 'flex';
+      document.getElementById('adminApp').style.display = 'none';
+      setTimeout(() => {
+        signOut(auth).catch(() => {});
+        window.location.href = '/index.html';
+      }, 3000);
+      return;
+    }
+    // Authorized
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('accessDeniedOverlay').style.display = 'none';
+    document.getElementById('adminApp').style.display = 'block';
+    document.getElementById('adminEmailDisplay').textContent = user.email;
+    initAdminApp();
+  });
+
+  // ── Login ─────────────────────────────────────────
+  document.getElementById('loginBtn').addEventListener('click', handleLogin);
+  document.getElementById('loginPassword').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleLogin();
+  });
+
+  document.getElementById('togglePass').addEventListener('click', () => {
+    const inp = document.getElementById('loginPassword');
+    const icon = document.querySelector('#togglePass .material-symbols-rounded');
+    if (inp.type === 'password') {
+      inp.type = 'text';
+      icon.textContent = 'visibility_off';
+    } else {
+      inp.type = 'password';
+      icon.textContent = 'visibility';
+    }
+  });
+
+  async function handleLogin() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errDiv = document.getElementById('loginError');
+    const errMsg = document.getElementById('loginErrorMsg');
+    const loader = document.getElementById('loginLoader');
+
+    if (!email || !password) {
+      errMsg.textContent = 'Please enter email and password.';
+      errDiv.style.display = 'flex';
+      return;
+    }
+
+    errDiv.style.display = 'none';
+    loader.style.display = 'block';
+    document.getElementById('loginBtn').disabled = true;
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // onAuthStateChanged handles the rest
+    } catch(e) {
+      loader.style.display = 'none';
+      document.getElementById('loginBtn').disabled = false;
+      let msg = 'Sign-in failed. Please check your credentials.';
+      if (e.code === 'auth/user-not-found') msg = 'No account found with this email.';
+      if (e.code === 'auth/wrong-password') msg = 'Incorrect password.';
+      if (e.code === 'auth/invalid-email') msg = 'Invalid email address.';
+      if (e.code === 'auth/too-many-requests') msg = 'Too many failed attempts. Try again later.';
+      if (e.code === 'auth/network-request-failed') msg = 'Network error. Check your connection.';
+      if (e.code === 'auth/invalid-credential') msg = 'Invalid credentials. Check email and password.';
+      errMsg.textContent = msg;
+      errDiv.style.display = 'flex';
+    }
+  }
+
+  // ── Sign Out ──────────────────────────────────────
+  document.getElementById('signOutBtn').addEventListener('click', async () => {
+    if (confirm('Sign out of admin panel?')) {
+      if (unsubscribeEvents) unsubscribeEvents();
+      await signOut(auth);
+      window.location.href = '/index.html';
+    }
+  });
+
+  // ── Admin App Init ────────────────────────────────
+  function initAdminApp() {
+    setTodayAsDefault();
+    loadAndSubscribeEvents();
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      loadAndSubscribeEvents();
+      showSnack('Events refreshed', 'refresh');
+    });
+
+    // Audio link detection
+    document.getElementById('fieldAudio').addEventListener('input', (e) => {
+      const url = e.target.value;
+      const status = document.getElementById('audioStatus');
+      const isDrive = url.includes('drive.google.com');
+      status.style.display = isDrive ? 'flex' : 'none';
+    });
+  }
+
+  function setTodayAsDefault() {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth()+1).padStart(2,'0');
+    const d = String(today.getDate()).padStart(2,'0');
+    document.getElementById('fieldDate').value = `${y}-${m}-${d}`;
+  }
+
+  // ── Firestore Events ──────────────────────────────
+  function loadAndSubscribeEvents() {
+    if (!db) return;
+    document.getElementById('eventsLoading').style.display = 'block';
+    document.getElementById('eventsList').innerHTML = '';
+
+    if (unsubscribeEvents) unsubscribeEvents();
+
+    try {
+      const q = query(collection(db, COLLECTION), orderBy('date', 'asc'));
+      unsubscribeEvents = onSnapshot(q, (snap) => {
+        allEvents = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        document.getElementById('eventsLoading').style.display = 'none';
+        updateStats();
+        buildMonthFilters();
+        renderEventsList();
+      }, err => {
+        console.error('[Firestore]', err);
+        document.getElementById('eventsLoading').style.display = 'none';
+        if (err.code === 'permission-denied') {
+          document.getElementById('eventsList').innerHTML = `<div style="padding:24px;text-align:center;color:var(--md-sys-color-error)">
+            <span class="material-symbols-rounded" style="font-size:36px;display:block">lock</span>
+            <div style="font-size:14px;margin-top:8px">Firestore permission denied.<br>Check your security rules and Firebase config.</div>
+          </div>`;
+        }
+      });
+    } catch(e) {
+      console.error('[Firestore] Subscribe error:', e);
+      document.getElementById('eventsLoading').style.display = 'none';
+    }
+  }
+
+  function updateStats() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('statTotal').textContent = allEvents.length;
+    document.getElementById('statUpcoming').textContent = allEvents.filter(e => e.date >= today).length;
+    document.getElementById('statWithMedia').textContent = allEvents.filter(e => e.audioLink).length;
+    document.getElementById('statWithSlides').textContent = allEvents.filter(e => e.slideLink).length;
+  }
+
+  function buildMonthFilters() {
+    const months = [...new Set(allEvents.map(e => e.date.slice(0,7)))].sort();
+    const bar = document.getElementById('monthFilterBar');
+    bar.innerHTML = `<button class="chip ${activeMonthFilter === null ? 'selected' : ''}" data-filter="all">All</button>` +
+      months.map(m => {
+        const [y, mo] = m.split('-');
+        const label = new Date(parseInt(y), parseInt(mo)-1, 1).toLocaleDateString('en-US', { month:'short', year:'numeric' });
+        return `<button class="chip ${activeMonthFilter === m ? 'selected' : ''}" data-filter="${m}">${label}</button>`;
+      }).join('');
+
+    bar.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        activeMonthFilter = chip.dataset.filter === 'all' ? null : chip.dataset.filter;
+        buildMonthFilters();
+        renderEventsList();
+      });
+    });
+  }
+
+  function renderEventsList() {
+    const filtered = activeMonthFilter
+      ? allEvents.filter(e => e.date.startsWith(activeMonthFilter))
+      : allEvents;
+
+    if (filtered.length === 0) {
+      document.getElementById('eventsList').innerHTML = `<div style="padding:32px;text-align:center;color:var(--md-sys-color-on-surface-variant)">
+        <span class="material-symbols-rounded" style="font-size:48px;display:block;margin-bottom:12px;opacity:0.4">event_busy</span>
+        <div style="font-size:14px">No events scheduled yet.<br>Use the form above to add your first event!</div>
+      </div>`;
+      return;
+    }
+
+    // Group by month
+    const groups = {};
+    filtered.forEach(e => {
+      const key = e.date.slice(0, 7);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(e);
+    });
+
+    const today = new Date().toISOString().split('T')[0];
+    let html = '';
+    for (const [monthKey, events] of Object.entries(groups)) {
+      const [y, m] = monthKey.split('-');
+      const monthLabel = new Date(parseInt(y), parseInt(m)-1, 1).toLocaleDateString('en-US', { month:'long', year:'numeric' });
+      html += `<div class="month-group-header">
+        <span class="material-symbols-rounded" style="font-size:16px">calendar_month</span>
+        ${monthLabel}
+        <span style="background:var(--md-sys-color-surface-container-highest);border-radius:12px;padding:2px 8px;font-size:11px;font-weight:600;color:var(--md-sys-color-on-surface-variant)">${events.length}</span>
+      </div>`;
+
+      events.forEach(ev => {
+        const isUpcoming = ev.date >= today;
+        const [y2, mo2, d2] = ev.date.split('-').map(Number);
+        const displayDate = new Date(y2, mo2-1, d2).toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+
+        html += `<div class="event-card" data-date="${ev.id}">
+          <div class="event-card-header">
+            <div class="event-date-chip">${displayDate}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:15px;font-weight:600;color:var(--md-sys-color-on-surface);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(ev.title || 'Untitled')}</div>
+              ${ev.preacher ? `<div style="font-size:12px;color:var(--md-sys-color-on-surface-variant)">${escHtml(ev.preacher)}</div>` : ''}
+            </div>
+            <div class="status-dot ${isUpcoming ? 'green' : 'amber'}"></div>
+          </div>
+          ${ev.verse ? `<div class="event-detail-row">
+            <span class="material-symbols-rounded icon-filled" style="font-size:16px;color:var(--md-sys-color-primary);flex-shrink:0">menu_book</span>
+            <span>${escHtml(ev.verse)}</span>
+          </div>` : ''}
+          <div class="event-detail-row" style="gap:16px">
+            ${ev.audioLink ? `<span style="display:flex;align-items:center;gap:4px;font-size:12px;color:#4CAF50"><span class="material-symbols-rounded icon-filled" style="font-size:14px">headphones</span>Audio</span>` : `<span style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--md-sys-color-outline)"><span class="material-symbols-rounded" style="font-size:14px">headphones</span>No audio</span>`}
+            ${ev.slideLink ? `<span style="display:flex;align-items:center;gap:4px;font-size:12px;color:#2196F3"><span class="material-symbols-rounded icon-filled" style="font-size:14px">slideshow</span>Slides</span>` : `<span style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--md-sys-color-outline)"><span class="material-symbols-rounded" style="font-size:14px">slideshow</span>No slides</span>`}
+          </div>
+          <div class="event-card-actions">
+            <button class="btn-sm btn-edit" data-action="edit" data-date="${ev.id}">
+              <span class="material-symbols-rounded" style="font-size:16px">edit</span>
+              Edit
+            </button>
+            <button class="btn-sm btn-delete" data-action="delete" data-date="${ev.id}">
+              <span class="material-symbols-rounded" style="font-size:16px">delete</span>
+              Delete
+            </button>
+          </div>
+        </div>`;
+      });
+    }
+
+    const container = document.getElementById('eventsList');
+    container.innerHTML = html;
+
+    container.querySelectorAll('[data-action="edit"]').forEach(btn => {
+      btn.addEventListener('click', () => startEdit(btn.dataset.date));
+    });
+    container.querySelectorAll('[data-action="delete"]').forEach(btn => {
+      btn.addEventListener('click', () => promptDelete(btn.dataset.date));
+    });
+  }
+
+  // ── Save Event ────────────────────────────────────
+  document.getElementById('saveEventBtn').addEventListener('click', saveEvent);
+
+  async function saveEvent() {
+    const dateVal = document.getElementById('fieldDate').value;
+    const title = document.getElementById('fieldTitle').value.trim();
+    const preacher = document.getElementById('fieldPreacher').value.trim();
+    const verse = document.getElementById('fieldVerse').value.trim();
+    const audioLink = document.getElementById('fieldAudio').value.trim();
+    const slideLink = document.getElementById('fieldSlide').value.trim();
+
+    if (!dateVal || !title) {
+      showSnack('Date and Title are required!', 'error');
+      document.getElementById('fieldDate').focus();
+      return;
+    }
+
+    if (!db) {
+      showSnack('Firebase not configured. See README.md for setup.', 'error', 5000);
+      return;
+    }
+
+    const btn = document.getElementById('saveEventBtn');
+    btn.disabled = true;
+    const originalLabel = document.getElementById('saveBtnLabel').textContent;
+    document.getElementById('saveBtnLabel').textContent = 'Saving...';
+
+    try {
+      const docRef = doc(db, COLLECTION, dateVal);
+      await setDoc(docRef, {
+        date: dateVal,
+        title,
+        preacher,
+        verse,
+        audioLink,
+        slideLink,
+        updatedAt: Timestamp.now()
+      }, { merge: true });
+
+      clearForm();
+      showSnack(editingDate ? 'Event updated!' : 'Event saved!', 'check_circle');
+      editingDate = null;
+      document.getElementById('editModeBanner').style.display = 'none';
+      document.getElementById('formTitle').textContent = 'Add Service Event';
+      document.getElementById('saveBtnLabel').textContent = 'Save Event';
+
+      // Scroll to events list
+      document.getElementById('eventsList').scrollIntoView({ behavior: 'smooth' });
+    } catch(e) {
+      console.error('[Firestore] Save error:', e);
+      showSnack('Save failed: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      if (document.getElementById('saveBtnLabel').textContent === 'Saving...') {
+        document.getElementById('saveBtnLabel').textContent = originalLabel;
+      }
+    }
+  }
+
+  // ── Edit Event ────────────────────────────────────
+  function startEdit(dateId) {
+    const event = allEvents.find(e => e.id === dateId);
+    if (!event) return;
+
+    editingDate = dateId;
+    document.getElementById('fieldDate').value = event.date || '';
+    document.getElementById('fieldDate').readOnly = true;
+    document.getElementById('fieldTitle').value = event.title || '';
+    document.getElementById('fieldPreacher').value = event.preacher || '';
+    document.getElementById('fieldVerse').value = event.verse || '';
+    document.getElementById('fieldAudio').value = event.audioLink || '';
+    document.getElementById('fieldSlide').value = event.slideLink || '';
+
+    document.getElementById('editModeBanner').style.display = 'flex';
+    const [y,m,d] = event.date.split('-');
+    document.getElementById('editDateLabel').textContent = new Date(parseInt(y), parseInt(m)-1, parseInt(d)).toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+    document.getElementById('formTitle').textContent = 'Update Service Event';
+    document.getElementById('saveBtnLabel').textContent = 'Update Event';
+
+    // Scroll to form
+    document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  document.getElementById('cancelEditBtn').addEventListener('click', () => {
+    clearForm();
+    editingDate = null;
+    document.getElementById('editModeBanner').style.display = 'none';
+    document.getElementById('formTitle').textContent = 'Add Service Event';
+    document.getElementById('saveBtnLabel').textContent = 'Save Event';
+    document.getElementById('fieldDate').readOnly = false;
+  });
+
+  // ── Delete Event ──────────────────────────────────
+  function promptDelete(dateId) {
+    const event = allEvents.find(e => e.id === dateId);
+    deleteTargetDate = dateId;
+    const [y,m,d] = dateId.split('-');
+    const label = new Date(parseInt(y), parseInt(m)-1, parseInt(d)).toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+    document.getElementById('deleteDialogText').innerHTML =
+      `Are you sure you want to delete the event for <strong>${label}</strong>${event?.title ? ` — "${event.title}"` : ''}? <br><br>This action cannot be undone.`;
+    document.getElementById('deleteDialog').classList.remove('hidden');
+  }
+
+  document.getElementById('cancelDeleteBtn').addEventListener('click', () => {
+    document.getElementById('deleteDialog').classList.add('hidden');
+    deleteTargetDate = null;
+  });
+
+  document.getElementById('deleteDialog').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('deleteDialog')) {
+      document.getElementById('deleteDialog').classList.add('hidden');
+      deleteTargetDate = null;
+    }
+  });
+
+  document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+    if (!deleteTargetDate || !db) return;
+    const btn = document.getElementById('confirmDeleteBtn');
+    btn.disabled = true;
+    btn.textContent = 'Deleting...';
+    try {
+      await deleteDoc(doc(db, COLLECTION, deleteTargetDate));
+      document.getElementById('deleteDialog').classList.add('hidden');
+      showSnack('Event deleted successfully', 'check_circle');
+      if (editingDate === deleteTargetDate) {
+        clearForm();
+        editingDate = null;
+        document.getElementById('editModeBanner').style.display = 'none';
+      }
+      deleteTargetDate = null;
+    } catch(e) {
+      showSnack('Delete failed: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-symbols-rounded" style="font-size:18px">delete</span>Delete';
+    }
+  });
+
+  // ── Clear Form ────────────────────────────────────
+  document.getElementById('clearFormBtn').addEventListener('click', () => {
+    clearForm();
+    editingDate = null;
+    document.getElementById('editModeBanner').style.display = 'none';
+    document.getElementById('formTitle').textContent = 'Add Service Event';
+    document.getElementById('saveBtnLabel').textContent = 'Save Event';
+    document.getElementById('fieldDate').readOnly = false;
+  });
+
+  function clearForm() {
+    document.getElementById('fieldDate').readOnly = false;
+    setTodayAsDefault();
+    ['fieldTitle','fieldPreacher','fieldVerse','fieldAudio','fieldSlide'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('audioStatus').style.display = 'none';
+  }
+
+  // ── Helpers ───────────────────────────────────────
+  function showSnack(msg, icon = 'check_circle', duration = 3000) {
+    const ex = document.querySelector('.snackbar');
+    if (ex) ex.remove();
+    const s = document.createElement('div');
+    s.className = 'snackbar';
+    s.innerHTML = `<span class="material-symbols-rounded icon-filled" style="font-size:18px">${icon}</span>${msg}`;
+    document.body.appendChild(s);
+    setTimeout(() => {
+      s.classList.add('hide');
+      setTimeout(() => s.remove(), 250);
+    }, duration);
+  }
+
+  function escHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>
