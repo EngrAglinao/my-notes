@@ -1,20 +1,539 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#6750A4" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#D0BCFF" media="(prefers-color-scheme: dark)">
-    <meta name="description" content="Vista Worship Planner — Church service calendar, offline Bible, and personal notes" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Vista Worship">
-    <link rel="manifest" href="/manifest.json">
-    <link rel="apple-touch-icon" href="/icons/icon-192.svg">
-    <title>Vista Worship Planner</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="description" content="Church Media PWA — Sermon notes, audio, and offline Bible on your mobile device.">
+  <meta name="theme-color" content="#1a6cff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ChurchApp">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./styles.css">
+  <title>Church — Media &amp; Notes</title>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════
+     DESKTOP LOCKOUT SCREEN
+══════════════════════════════════════════════════════ -->
+<div id="desktop-lockout" aria-live="polite">
+  <div class="lockout-card">
+    <span class="lockout-icon">smartphone</span>
+    <h1>Mobile Device Required</h1>
+    <p>This application is strictly designed for handheld mobile devices only. Please access this link from your smartphone or install the PWA on your mobile home screen to continue.</p>
+    <div class="lockout-badge" style="margin-top:20px;">
+      <span style="font-family:'Material Symbols Rounded';font-size:18px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 20;">lock</span>
+      Mobile-Only Experience
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     FOLDER PERMISSION PROMPT (shown on first load)
+══════════════════════════════════════════════════════ -->
+<div id="folder-prompt-overlay" class="folder-prompt-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="folder-prompt-title">
+  <div class="folder-prompt-card">
+    <div class="folder-prompt-icon">folder_open</div>
+    <h2 class="folder-prompt-title" id="folder-prompt-title">Choose Your Notes Folder</h2>
+    <p class="folder-prompt-desc">
+      Your personal notes are saved <strong>directly on your device</strong> — never uploaded to any server.
+      Choose a folder where your notes will live. Even if you uninstall this app, your notes remain safe in that folder.
+    </p>
+    <button class="m3-btn m3-btn-filled full-width ripple-container" onclick="requestFolderAccess()" style="margin-bottom:12px;">
+      <span class="material-symbols-rounded" style="font-family:'Material Symbols Rounded';font-size:20px;">folder_open</span>
+      Choose Folder
+    </button>
+    <button class="m3-btn m3-btn-text full-width ripple-container" onclick="closeFolderPrompt()">
+      Skip for Now
+    </button>
+    <p style="font-size:11px;color:var(--md-sys-color-on-surface-variant);margin-top:12px;line-height:1.5;">
+      Note: Notes cannot be saved without a folder. You can connect one anytime from Settings.
+    </p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MAIN APPLICATION ROOT
+══════════════════════════════════════════════════════ -->
+<div id="app-root">
+
+  <!-- ── TOP APP BAR ── -->
+  <header class="m3-top-app-bar" id="top-app-bar" role="banner">
+    <button class="m3-icon-btn ripple-container" onclick="openMonthPicker()" aria-label="Select month and year" title="Navigate to month">
+      date_range
+    </button>
+
+    <div class="bar-title">
+      <span id="bar-title-main">Church Media</span>
+      <span class="subtitle" id="bar-subtitle">Tap a date to begin</span>
+    </div>
+
+    <button class="m3-icon-btn ripple-container" id="calendar-toggle-btn" onclick="toggleCalendar()" aria-label="Toggle calendar" title="Show/hide calendar">
+      calendar_month
+    </button>
+
+    <button class="m3-icon-btn ripple-container" onclick="openDialog('app-menu-modal')" aria-label="More options">
+      more_vert
+    </button>
+  </header>
+
+  <!-- ── MAIN SCROLLABLE CONTENT ── -->
+  <main class="app-content" id="app-main">
+
+    <!-- ── HOME / CALENDAR TAB ── -->
+    <div class="page-section active" id="section-home">
+
+      <!-- CALENDAR SECTION -->
+      <section id="calendar-section" class="calendar-section" aria-label="Calendar navigation">
+        <div class="calendar-header">
+          <div class="calendar-month-label" id="calendar-month-label">Loading…</div>
+          <div style="display:flex;gap:4px;">
+            <button class="m3-icon-btn ripple-container" onclick="navigateCalendar(-1)" aria-label="Previous month" style="width:36px;height:36px;">
+              chevron_left
+            </button>
+            <button class="m3-icon-btn ripple-container" onclick="navigateCalendar(1)" aria-label="Next month" style="width:36px;height:36px;">
+              chevron_right
+            </button>
+          </div>
+        </div>
+
+        <div class="calendar-slide-wrapper" id="calendar-slide-wrapper">
+          <div id="calendar-slide">
+            <div class="calendar-grid" id="calendar-grid" role="grid" aria-label="Calendar days"></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- DATE CONTENT AREA -->
+      <section id="date-content" style="padding-top:8px;">
+
+        <!-- Selected date label -->
+        <div class="section-block" style="padding-bottom:4px;">
+          <div id="selected-date-display" style="font-size:13px;font-weight:600;color:var(--md-sys-color-on-surface-variant);letter-spacing:0.2px;">Select a date above</div>
+        </div>
+
+        <!-- ── EVENT HEADER (State A) ── -->
+        <div id="event-header-section" class="section-block hidden">
+          <div class="m3-card" style="padding:16px 16px 12px;margin-bottom:2px;">
+            <h2 id="event-title" style="font-size:20px;font-weight:700;color:var(--md-sys-color-on-surface);margin-bottom:4px;line-height:1.3;"></h2>
+            <div id="event-preacher" style="font-size:13px;color:var(--md-sys-color-primary);font-weight:600;margin-bottom:6px;"></div>
+            <div id="event-verse" style="font-size:13px;color:var(--md-sys-color-on-surface-variant);display:flex;align-items:center;gap:4px;">
+            </div>
+          </div>
+        </div>
+
+        <!-- ── NO EVENT BANNER (State B) ── -->
+        <div id="no-event-banner" class="section-block hidden">
+          <div class="m3-banner info">
+            <span class="banner-icon material-symbols-rounded">auto_stories</span>
+            <div>
+              <strong>No media uploaded for this date yet.</strong><br>
+              Feel free to use this space for personal journaling!
+            </div>
+          </div>
+        </div>
+
+        <!-- ── AUDIO PLAYER SECTION ── -->
+        <div id="audio-section" class="section-block hidden">
+          <div id="audio-player-container" class="m3-audio-player">
+            <div class="player-title" id="audio-player-title">Sermon Audio</div>
+            <div class="player-controls">
+              <button class="player-play-btn ripple-container" id="audio-play-btn" aria-label="Play/pause">play_arrow</button>
+              <div class="player-progress">
+                <div class="progress-bar-wrap" id="audio-progress-wrap" role="slider" aria-label="Audio progress">
+                  <div class="progress-bar-fill" id="audio-progress-fill" style="width:0%"></div>
+                </div>
+                <div class="player-time">
+                  <span id="audio-current">0:00</span>
+                  <span id="audio-total">0:00</span>
+                </div>
+              </div>
+              <button class="player-speed-btn ripple-container" id="audio-speed-btn" onclick="changePlaybackSpeed()" aria-label="Playback speed">1x</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SLIDES SECTION ── -->
+        <div id="slides-section" class="section-block hidden">
+          <div class="slide-deck-container" id="slides-container">
+            <iframe id="slides-iframe" title="Presentation slides" allowfullscreen></iframe>
+            <div class="slide-deck-nav">
+              <button class="slide-nav-btn ripple-container" onclick="slideNav(-1)" aria-label="Previous slide">chevron_left</button>
+              <button class="slide-nav-btn ripple-container" onclick="slideNav(1)" aria-label="Next slide">chevron_right</button>
+            </div>
+          </div>
+          <div class="slide-indicator" id="slide-indicator">Swipe left/right to navigate slides</div>
+        </div>
+
+        <!-- ── NOTES / EDITOR SECTION ── -->
+        <div class="section-block" id="notes-section">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div class="section-label" style="margin-bottom:0;">Personal Notes</div>
+            <div id="save-status-text" class="save-status">
+              <span class="material-symbols-rounded status-icon">folder_off</span> Connect folder
+            </div>
+          </div>
+
+          <!-- Rich Text Toolbar -->
+          <div class="rich-editor-toolbar" role="toolbar" aria-label="Text formatting">
+            <button class="toolbar-btn ripple-container" onclick="formatText('bold')" title="Bold" aria-label="Bold"><strong>B</strong></button>
+            <button class="toolbar-btn ripple-container" onclick="formatText('italic')" title="Italic" aria-label="Italic"><em>I</em></button>
+            <button class="toolbar-btn ripple-container" onclick="formatText('underline')" title="Underline" aria-label="Underline" style="text-decoration:underline;">U</button>
+            <div class="toolbar-separator"></div>
+            <button class="toolbar-btn ripple-container" onclick="insertHeading('h1')" title="Heading 1" aria-label="Heading 1" style="font-size:11px;font-weight:700;">H1</button>
+            <button class="toolbar-btn ripple-container" onclick="insertHeading('h2')" title="Heading 2" aria-label="Heading 2" style="font-size:11px;font-weight:700;">H2</button>
+            <button class="toolbar-btn ripple-container" onclick="insertHeading('h3')" title="Heading 3" aria-label="Heading 3" style="font-size:11px;font-weight:700;">H3</button>
+            <div class="toolbar-separator"></div>
+            <button class="toolbar-btn ripple-container" onclick="formatText('insertUnorderedList')" title="Bullet list" aria-label="Bullet list">
+              <span style="font-family:'Material Symbols Rounded';font-size:18px;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;">format_list_bulleted</span>
+            </button>
+            <button class="toolbar-btn ripple-container" onclick="formatText('insertOrderedList')" title="Numbered list" aria-label="Numbered list">
+              <span style="font-family:'Material Symbols Rounded';font-size:18px;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;">format_list_numbered</span>
+            </button>
+            <button class="toolbar-btn ripple-container" onclick="insertLink()" title="Insert link" aria-label="Insert link">
+              <span style="font-family:'Material Symbols Rounded';font-size:18px;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;">link</span>
+            </button>
+            <button class="toolbar-btn ripple-container" onclick="document.getElementById('image-upload-input').click()" title="Insert image" aria-label="Insert image">
+              <span style="font-family:'Material Symbols Rounded';font-size:18px;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;">image</span>
+            </button>
+          </div>
+          <input type="file" id="image-upload-input" accept="image/*" style="display:none" onchange="insertImageFromUpload(this.files[0])">
+
+          <!-- Content Editable Editor -->
+          <div
+            id="note-editor"
+            class="rich-editor-content"
+            contenteditable="true"
+            role="textbox"
+            aria-multiline="true"
+            aria-label="Note editor"
+            placeholder="Start typing your notes here…"
+            spellcheck="true"
+          ></div>
+        </div>
+
+      </section>
+    </div>
+
+    <!-- ── SETTINGS TAB ── -->
+    <div class="page-section" id="section-settings">
+      <div style="padding:20px 16px 12px;">
+        <h2 style="font-size:24px;font-weight:700;color:var(--md-sys-color-on-surface);margin-bottom:4px;">Settings</h2>
+        <p style="font-size:14px;color:var(--md-sys-color-on-surface-variant);">Configure your notes folder and data portability.</p>
+      </div>
+
+      <!-- Folder Section -->
+      <div class="section-block">
+        <div class="admin-form-section">
+          <div class="admin-section-title">
+            <span class="material-symbols-rounded">folder_open</span>
+            Notes Folder
+          </div>
+          <div id="folder-status" class="save-status" style="margin-bottom:16px;">
+            <span class="material-symbols-rounded status-icon">folder_off</span> No folder connected
+          </div>
+          <button class="m3-btn m3-btn-filled ripple-container full-width" onclick="requestFolderAccess()" style="margin-bottom:10px;">
+            <span class="material-symbols-rounded" style="font-family:'Material Symbols Rounded';font-size:18px;">folder_open</span>
+            Change Folder
+          </button>
+          <p style="font-size:12px;color:var(--md-sys-color-on-surface-variant);line-height:1.6;">
+            Your notes are saved locally on your device. This app never uploads personal notes to any server.
+          </p>
+        </div>
+      </div>
+
+      <!-- Data Portability -->
+      <div class="section-block">
+        <div class="admin-form-section">
+          <div class="admin-section-title">
+            <span class="material-symbols-rounded">swap_horiz</span>
+            Data Portability
+          </div>
+          <button class="m3-btn m3-btn-tonal ripple-container full-width" onclick="exportNotes()" style="margin-bottom:10px;">
+            <span class="material-symbols-rounded" style="font-family:'Material Symbols Rounded';font-size:18px;">download</span>
+            Export All Notes (JSON)
+          </button>
+          <button class="m3-btn m3-btn-outlined ripple-container full-width" onclick="document.getElementById('import-file-input').click()">
+            <span class="material-symbols-rounded" style="font-family:'Material Symbols Rounded';font-size:18px;">upload</span>
+            Import Notes from JSON
+          </button>
+          <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importNotes(this.files[0])">
+        </div>
+      </div>
+
+      <!-- Bible Translation -->
+      <div class="section-block">
+        <div class="admin-form-section">
+          <div class="admin-section-title">
+            <span class="material-symbols-rounded">auto_stories</span>
+            Default Bible Translation
+          </div>
+          <div class="bible-translation-toggle">
+            <button class="bible-tr-btn active" data-tr="ESV" onclick="switchBibleTranslation('ESV')">ESV</button>
+            <button class="bible-tr-btn" data-tr="NIV" onclick="switchBibleTranslation('NIV')">NIV</button>
+          </div>
+          <p style="font-size:12px;color:var(--md-sys-color-on-surface-variant);line-height:1.6;">
+            Bible lookups work fully offline using the local scripture database.
+          </p>
+        </div>
+      </div>
+
+      <!-- Admin Link -->
+      <div class="section-block">
+        <div class="admin-form-section">
+          <div class="admin-section-title">
+            <span class="material-symbols-rounded">admin_panel_settings</span>
+            Administration
+          </div>
+          <a href="./manage.html" class="m3-btn m3-btn-outlined ripple-container full-width" style="text-decoration:none;">
+            <span class="material-symbols-rounded" style="font-family:'Material Symbols Rounded';font-size:18px;">open_in_new</span>
+            Open Admin Panel
+          </a>
+        </div>
+      </div>
+
+      <!-- App Info -->
+      <div class="section-block">
+        <div class="admin-form-section">
+          <div class="admin-section-title">
+            <span class="material-symbols-rounded">info</span>
+            About
+          </div>
+          <p style="font-size:13px;color:var(--md-sys-color-on-surface-variant);line-height:1.7;">
+            <strong>Church Media PWA</strong> v1.0.0<br>
+            Built with pure HTML5, CSS3 &amp; Vanilla JavaScript.<br>
+            Material Design 3 · Offline-capable · Zero login required.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════
+       BOTTOM NAVIGATION BAR
+  ══════════════════════════════════════════════════════ -->
+  <nav class="m3-nav-bar" role="navigation" aria-label="Main navigation">
+    <button class="m3-nav-item active ripple-container" data-tab="home" onclick="switchTab('home')" aria-label="Home">
+      <div class="nav-indicator">
+        <span class="nav-icon">home</span>
+      </div>
+      <span class="nav-label">Home</span>
+    </button>
+    <button class="m3-nav-item ripple-container" data-tab="settings" onclick="switchTab('settings')" aria-label="Settings">
+      <div class="nav-indicator">
+        <span class="nav-icon">settings</span>
+      </div>
+      <span class="nav-label">Settings</span>
+    </button>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════════
+       PWA INSTALL BANNER
+  ══════════════════════════════════════════════════════ -->
+  <div id="pwa-install-banner" class="pwa-install-banner" role="complementary" aria-label="Install app">
+    <div class="install-icon">install_mobile</div>
+    <div class="install-text">
+      <div class="install-title">Install Church App</div>
+      <div class="install-desc">Add to home screen for offline access</div>
+    </div>
+    <button class="m3-btn m3-btn-filled ripple-container" onclick="triggerPwaInstall()" style="padding:0 16px;min-height:40px;font-size:13px;">Install</button>
+    <button class="m3-icon-btn ripple-container" onclick="dismissInstallBanner()" aria-label="Dismiss" style="width:36px;height:36px;flex-shrink:0;">close</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       M3 SNACKBAR
+  ══════════════════════════════════════════════════════ -->
+  <div id="m3-snackbar" role="status" aria-live="polite">
+    <span class="snackbar-icon material-symbols-rounded"></span>
+    <span class="snackbar-msg"></span>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       MONTH PICKER MODAL
+  ══════════════════════════════════════════════════════ -->
+  <div id="month-picker-modal" class="m3-scrim" onclick="closeDialog('month-picker-modal')" role="dialog" aria-modal="true" aria-label="Select month and year">
+    <div class="m3-dialog" onclick="event.stopPropagation()">
+      <div class="m3-dialog-handle"></div>
+      <div class="m3-dialog-title">Navigate to Month</div>
+
+      <div class="year-selector" style="margin-bottom:8px;">
+        <button class="m3-icon-btn ripple-container" onclick="changePickerYear(-1)" aria-label="Previous year">chevron_left</button>
+        <div class="year-display" id="mp-year">2025</div>
+        <button class="m3-icon-btn ripple-container" onclick="changePickerYear(1)" aria-label="Next year">chevron_right</button>
+      </div>
+
+      <div class="month-year-grid" id="mp-month-grid"></div>
+
+      <div class="m3-dialog-actions" style="margin-top:16px;">
+        <button class="m3-btn m3-btn-text ripple-container" onclick="closeDialog('month-picker-modal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       APP MENU MODAL
+  ══════════════════════════════════════════════════════ -->
+  <div id="app-menu-modal" class="m3-scrim" onclick="closeDialog('app-menu-modal')" role="dialog" aria-modal="true" aria-label="App menu">
+    <div class="m3-dialog" onclick="event.stopPropagation()" style="padding-bottom:32px;">
+      <div class="m3-dialog-handle"></div>
+      <div class="m3-dialog-title" style="margin-bottom:16px;">Options</div>
+
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <button class="m3-btn m3-btn-text ripple-container" onclick="toggleCalendar();closeDialog('app-menu-modal')" style="justify-content:flex-start;padding:0 12px;color:var(--md-sys-color-on-surface);">
+          <span class="material-symbols-rounded" style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--md-sys-color-primary);">calendar_month</span>
+          Toggle Calendar
+        </button>
+        <button class="m3-btn m3-btn-text ripple-container" onclick="requestFolderAccess();closeDialog('app-menu-modal')" style="justify-content:flex-start;padding:0 12px;color:var(--md-sys-color-on-surface);">
+          <span class="material-symbols-rounded" style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--md-sys-color-primary);">folder_open</span>
+          Change Notes Folder
+        </button>
+        <button class="m3-btn m3-btn-text ripple-container" onclick="exportNotes();closeDialog('app-menu-modal')" style="justify-content:flex-start;padding:0 12px;color:var(--md-sys-color-on-surface);">
+          <span class="material-symbols-rounded" style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--md-sys-color-primary);">download</span>
+          Export Notes
+        </button>
+        <div class="divider" style="margin:8px 0;"></div>
+        <a href="./manage.html" style="text-decoration:none;">
+          <button class="m3-btn m3-btn-text ripple-container full-width" style="justify-content:flex-start;padding:0 12px;color:var(--md-sys-color-on-surface);">
+            <span class="material-symbols-rounded" style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--md-sys-color-primary);">admin_panel_settings</span>
+            Admin Panel
+          </button>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       BIBLE VERSE MODAL
+  ══════════════════════════════════════════════════════ -->
+  <div id="bible-modal" class="m3-fullscrim" onclick="closeBibleModal()" role="dialog" aria-modal="true" aria-label="Bible verse lookup">
+    <div class="m3-center-dialog" onclick="event.stopPropagation()" style="max-width:380px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:0.5px;color:var(--md-sys-color-primary);text-transform:uppercase;margin-bottom:2px;">Scripture</div>
+          <div id="bible-modal-ref" style="font-size:18px;font-weight:700;color:var(--md-sys-color-on-surface);"></div>
+        </div>
+        <button class="m3-icon-btn ripple-container" onclick="closeBibleModal()" aria-label="Close Bible modal" style="flex-shrink:0;">close</button>
+      </div>
+
+      <div class="bible-translation-toggle">
+        <button class="bible-tr-btn active" data-tr="ESV" onclick="switchBibleTranslation('ESV')">ESV</button>
+        <button class="bible-tr-btn" data-tr="NIV" onclick="switchBibleTranslation('NIV')">NIV</button>
+      </div>
+
+      <div id="bible-result-text" class="bible-result"></div>
+
+      <div style="margin-top:12px;text-align:center;">
+        <p style="font-size:11px;color:var(--md-sys-color-on-surface-variant);">Powered by local offline scripture database</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#app-root -->
+
+<!-- ══════════════════════════════════════════════════════
+     SCRIPTS
+══════════════════════════════════════════════════════ -->
+
+<!-- Bible data (offline scripture) -->
+<script src="./bible_data.js"></script>
+
+<!-- Main app logic -->
+<script src="./app.js"></script>
+
+<!-- Firebase (optional — only initializes if config is embedded by admin in manage.html,
+     but on index.html we listen to Firestore via a shared config in localStorage or a
+     lightweight companion config file the user/admin sets up) -->
+<!-- Firebase is loaded conditionally via the FIREBASE_CONFIG global set in localStorage -->
+<script>
+(function() {
+  // ── Attempt to load Firebase config saved by the admin panel ──
+  // The admin panel writes the config to localStorage['church_fb_config']
+  // so the user view can also connect to Firestore for reading events.
+  const storedConfig = localStorage.getItem('church_fb_config');
+  let appInitialized = false;
+
+  function safeInitApp() {
+    if (appInitialized) return;
+    appInitialized = true;
+    initApp();
+  }
+
+  if (storedConfig) {
+    try {
+      const cfg = JSON.parse(storedConfig);
+
+      function loadScript(src, cb, errCb) {
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = cb;
+        s.onerror = errCb || (() => console.warn('[Firebase] Failed to load:', src));
+        document.head.appendChild(s);
+      }
+
+      loadScript(
+        'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',
+        () => {
+          loadScript(
+            'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js',
+            () => {
+              // Initialize Firestore connection
+              try {
+                if (!firebase.apps.length) firebase.initializeApp(cfg);
+                db = firebase.firestore();
+                // Start real-time listener
+                db.collection('calendar_events')
+                  .orderBy('date', 'asc')
+                  .onSnapshot(snapshot => {
+                    AppState.events = {};
+                    snapshot.forEach(doc => {
+                      const data = doc.data();
+                      AppState.events[data.date] = { id: doc.id, ...data };
+                    });
+                    renderCalendar();
+                    if (AppState.selectedDate) loadDateContent(AppState.selectedDate);
+                  }, err => console.warn('[Firestore] Listener error:', err));
+                console.log('[App] Firestore connected.');
+              } catch(err) {
+                console.warn('[App] Firestore init error:', err);
+              }
+              safeInitApp();
+            },
+            () => { console.warn('[Firebase] Firestore SDK failed to load'); safeInitApp(); }
+          );
+        },
+        () => { console.warn('[Firebase] App SDK failed to load'); safeInitApp(); }
+      );
+    } catch (err) {
+      console.warn('[Firebase] Config parse error:', err);
+      safeInitApp();
+    }
+  } else {
+    // No Firebase config — run in pure local mode
+    console.info('[App] Running in local-only mode. Visit manage.html to set up Firebase.');
+    safeInitApp();
+  }
+})();
+
+// ── Scroll → elevate top app bar ──
+document.getElementById('app-main')?.addEventListener('scroll', function() {
+  const bar = document.getElementById('top-app-bar');
+  if (bar) bar.classList.toggle('elevated', this.scrollTop > 0);
+}, { passive: true });
+
+// ── Keyboard shortcut helpers ──
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeBibleModal();
+    closeDialog('month-picker-modal');
+    closeDialog('app-menu-modal');
+  }
+});
+</script>
+
+</body>
 </html>

@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="description" content="Church Media Admin Panel — Manage events, schedules, audio, and slides.">
+  <meta name="theme-color" content="#1a6cff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./styles.css">
+  <title>Admin Panel — Church Media</title>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════
+     DESKTOP LOCKOUT SCREEN
+══════════════════════════════════════════════════════ -->
+<div id="desktop-lockout" aria-live="polite">
+  <div class="lockout-card">
+    <span class="lockout-icon">smartphone</span>
+    <h1>Mobile Device Required</h1>
+    <p>This admin panel is strictly designed for handheld mobile devices only. Please access this link from your smartphone or install the PWA on your mobile home screen to continue.</p>
+    <div class="lockout-badge" style="margin-top:20px;">
+      <span style="font-family:'Material Symbols Rounded';font-size:18px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 20;">lock</span>
+      Mobile-Only Experience
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MAIN APPLICATION ROOT
+══════════════════════════════════════════════════════ -->
+<div id="app-root">
+
+  <!-- ── TOP APP BAR ── -->
+  <header class="m3-top-app-bar" id="top-app-bar" role="banner">
+    <a href="./index.html" style="text-decoration:none;color:inherit;display:flex;">
+      <button class="m3-icon-btn ripple-container" aria-label="Back to user view" title="Back">
+        arrow_back
+      </button>
+    </a>
+
+    <div class="bar-title">
+      <span id="bar-title-main">Admin Panel</span>
+      <span class="subtitle" id="firestore-status-badge">Configuring…</span>
+    </div>
+
+    <button class="m3-icon-btn ripple-container" id="fb-status-icon" onclick="openDialog('firebase-config-modal')" aria-label="Firebase configuration" title="Firebase settings">
+      cloud_off
+    </button>
+  </header>
+
+  <!-- ── MAIN SCROLLABLE CONTENT ── -->
+  <main class="app-content" id="app-main">
+
+    <!-- ── FIREBASE CONFIG NOTICE ── -->
+    <div id="firebase-config-notice" class="section-block">
+      <div class="config-notice">
+        <div class="config-notice-title">
+          <span style="font-family:'Material Symbols Rounded';font-size:20px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 20;">settings</span>
+          Firebase Setup Required
+        </div>
+        <div class="config-notice-body">
+          Tap the cloud icon in the top bar to enter your Firebase configuration. Your config is saved locally on this device and never shared.
+        </div>
+        <button class="m3-btn m3-btn-filled ripple-container" onclick="openDialog('firebase-config-modal')" style="margin-top:12px;background:rgba(255,255,255,0.3);color:var(--md-sys-color-on-primary-container);">
+          <span style="font-family:'Material Symbols Rounded';font-size:18px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 20;">settings</span>
+          Open Firebase Config
+        </button>
+      </div>
+    </div>
+
+    <!-- ── HOME TAB ── -->
+    <div class="page-section active" id="section-home">
+
+      <!-- ── EVENT FORM ── -->
+      <div class="section-block" id="admin-form-card">
+        <div class="admin-form-section">
+          <div class="admin-section-title">
+            <span class="material-symbols-rounded">add_circle</span>
+            <span id="form-section-title">Add New Event</span>
+          </div>
+
+          <form id="admin-event-form" onsubmit="handleAdminFormSubmit(event)">
+
+            <div class="m3-field">
+              <label for="admin-date">Date *</label>
+              <input type="date" id="admin-date" name="date" required aria-required="true">
+            </div>
+
+            <div class="m3-field">
+              <label for="admin-title">Sermon Title *</label>
+              <input type="text" id="admin-title" name="title" placeholder="e.g. Walking in the Spirit" required aria-required="true">
+            </div>
+
+            <div class="m3-field">
+              <label for="admin-preacher">Preacher / Speaker</label>
+              <input type="text" id="admin-preacher" name="preacher" placeholder="e.g. Pastor John Doe">
+            </div>
+
+            <div class="m3-field">
+              <label for="admin-verse">Main Verse Reference</label>
+              <input type="text" id="admin-verse" name="verse" placeholder="e.g. John 3:16-17">
+            </div>
+
+            <div class="m3-field">
+              <label for="admin-audioUrl">Google Drive MP3 Link</label>
+              <input type="url" id="admin-audioUrl" name="audioUrl" placeholder="https://drive.google.com/file/d/…/view">
+              <p style="font-size:11px;color:var(--md-sys-color-on-surface-variant);margin-top:4px;line-height:1.5;">
+                Share the file → "Anyone with link" → paste link here. Supports Drive, direct MP3 URLs.
+              </p>
+            </div>
+
+            <div class="m3-field">
+              <label for="admin-slidesUrl">Presentation Embed Link (Canva / Google Slides)</label>
+              <input type="url" id="admin-slidesUrl" name="slidesUrl" placeholder="https://www.canva.com/design/…/view or Google Slides /pub link">
+              <p style="font-size:11px;color:var(--md-sys-color-on-surface-variant);margin-top:4px;line-height:1.5;">
+                Canva: Share → Embed; Google Slides: File → Publish to web → Embed iframe src URL.
+              </p>
+            </div>
+
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button type="submit" class="m3-btn m3-btn-filled ripple-container" id="admin-submit-btn" style="flex:1;min-width:140px;">
+                <span style="font-family:'Material Symbols Rounded';font-size:18px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 20;">save</span>
+                Save Event
+              </button>
+              <button type="button" class="m3-btn m3-btn-outlined ripple-container" id="admin-cancel-btn" onclick="adminCancelEdit()" style="display:none;">
+                Cancel
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+
+      <!-- ── EVENTS LIST ── -->
+      <div class="section-block">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div class="section-label" style="margin-bottom:0;">Event Schedule</div>
+          <span id="event-count-badge" style="font-size:12px;color:var(--md-sys-color-on-surface-variant);background:var(--md-sys-color-surface-container-highest);border-radius:999px;padding:2px 10px;">0 events</span>
+        </div>
+
+        <!-- Month filter row -->
+        <div class="month-filter-row" id="month-filter-row"></div>
+
+        <!-- Events list -->
+        <div id="admin-event-list">
+          <div class="m3-banner info">
+            <span class="banner-icon material-symbols-rounded">info</span>
+            <div>Connect Firebase to load events, or add your first event above.</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /#section-home -->
+
+    <!-- ── PLANNING TAB ── -->
+    <div class="page-section" id="section-planning">
+      <div style="padding:20px 16px 12px;">
+        <h2 style="font-size:22px;font-weight:700;color:var(--md-sys-color-on-surface);margin-bottom:4px;">Advanced Planning</h2>
+        <p style="font-size:13px;color:var(--md-sys-color-on-surface-variant);">Pre-fill upcoming service dates. Links can be added later.</p>
+      </div>
+
+      <div class="section-block">
+        <div class="admin-form-section">
+          <div class="admin-section-title">
+            <span class="material-symbols-rounded">event_repeat</span>
+            Batch Plan Future Dates
+          </div>
+          <p style="font-size:13px;color:var(--md-sys-color-on-surface-variant);margin-bottom:16px;line-height:1.6;">
+            Enter a date range and recurring day of week to auto-generate event stubs. Audio and slide links can be filled in later.
+          </p>
+
+          <div class="m3-field">
+            <label for="batch-start">Start Date</label>
+            <input type="date" id="batch-start">
+          </div>
+          <div class="m3-field">
+            <label for="batch-end">End Date</label>
+            <input type="date" id="batch-end">
+          </div>
+          <div class="m3-field">
+            <label for="batch-dow">Day of Week</label>
+            <select id="batch-dow">
+              <option value="0">Sunday</option>
+              <option value="6">Saturday</option>
+              <option value="3">Wednesday</option>
+              <option value="5">Friday</option>
+              <option value="1">Monday</option>
+              <option value="2">Tuesday</option>
+              <option value="4">Thursday</option>
+            </select>
+          </div>
+          <div class="m3-field">
+            <label for="batch-title-template">Title Template</label>
+            <input type="text" id="batch-title-template" placeholder="e.g. Sunday Service — {date}" value="Sunday Service">
+          </div>
+          <div class="m3-field">
+            <label for="batch-preacher">Default Preacher</label>
+            <input type="text" id="batch-preacher" placeholder="Leave blank to fill in later">
+          </div>
+
+          <button class="m3-btn m3-btn-filled ripple-container full-width" onclick="generateBatchEvents()">
+            <span style="font-family:'Material Symbols Rounded';font-size:18px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 20;">auto_fix_high</span>
+            Generate Event Stubs
+          </button>
+
+          <div id="batch-preview" style="margin-top:16px;"></div>
+        </div>
+      </div>
+    </div><!-- /#section-planning -->
+
+    <!-- ── SETTINGS TAB ── -->
+    <div class="page-section" id="section-settings">
+      <div style="padding:20px 16px 12px;">
+        <h2 style="font-size:22px;font-weight:700;color:var(--md-sys-color-on-surface);margin-bottom:4px;">Settings</h2>
+      </div>
+
+      <div class="section-block">
+        <div class="admin-form-section">
+          <div class="admin-section-title">
+            <span class="material-symbols-rounded">cloud</span>
+            Firebase Configuration
+          </div>
+          <p style="font-size:13px;color:var(--md-sys-color-on-surface-variant);margin-bottom:16px;line-height:1.6;">
+            Your Firebase config is stored locally on this device only. It is never synced or shared. Paste your project config JSON below to connect.
+          </p>
+          <button class="m3-btn m3-btn-filled ripple-container full-width" onclick="openDialog('firebase-config-modal')">
+            <span style="font-family:'Material Symbols Rounded';font-size:18px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 20;">settings</span>
+            Configure Firebase
+          </button>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="admin-form-section">
+          <div class="admin-section-title">
+            <span class="material-symbols-rounded">delete_sweep</span>
+            Danger Zone
+          </div>
+          <button class="m3-btn m3-btn-outlined ripple-container full-width" onclick="confirmClearConfig()" style="color:var(--md-sys-color-error);border-color:var(--md-sys-color-error);">
+            Clear Firebase Config
+          </button>
+          <p style="font-size:11px;color:var(--md-sys-color-on-surface-variant);margin-top:8px;line-height:1.5;">
+            Removes the saved Firebase config from this device. Does not delete any Firestore data.
+          </p>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="admin-form-section">
+          <div class="admin-section-title">
+            <span class="material-symbols-rounded">info</span>
+            About
+          </div>
+          <p style="font-size:13px;color:var(--md-sys-color-on-surface-variant);line-height:1.7;">
+            <strong>Admin Panel</strong> v1.0.0<br>
+            Event data is synced globally via Firestore.<br>
+            All users see updates in real-time.
+          </p>
+          <a href="./index.html" class="m3-btn m3-btn-tonal ripple-container full-width" style="text-decoration:none;margin-top:12px;">
+            <span style="font-family:'Material Symbols Rounded';font-size:18px;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;">home</span>
+            Back to User View
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </main><!-- /#app-main -->
+
+  <!-- ══════════════════════════════════════════════════════
+       BOTTOM NAVIGATION BAR
+  ══════════════════════════════════════════════════════ -->
+  <nav class="m3-nav-bar" role="navigation" aria-label="Admin navigation">
+    <button class="m3-nav-item active ripple-container" data-tab="home" onclick="switchTab('home')" aria-label="Events">
+      <div class="nav-indicator">
+        <span class="nav-icon">event</span>
+      </div>
+      <span class="nav-label">Events</span>
+    </button>
+    <button class="m3-nav-item ripple-container" data-tab="planning" onclick="switchTab('planning')" aria-label="Planning">
+      <div class="nav-indicator">
+        <span class="nav-icon">event_repeat</span>
+      </div>
+      <span class="nav-label">Planning</span>
+    </button>
+    <button class="m3-nav-item ripple-container" data-tab="settings" onclick="switchTab('settings')" aria-label="Settings">
+      <div class="nav-indicator">
+        <span class="nav-icon">settings</span>
+      </div>
+      <span class="nav-label">Settings</span>
+    </button>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════════
+       M3 SNACKBAR
+  ══════════════════════════════════════════════════════ -->
+  <div id="m3-snackbar" role="status" aria-live="polite">
+    <span class="snackbar-icon material-symbols-rounded"></span>
+    <span class="snackbar-msg"></span>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       FIREBASE CONFIG MODAL
+  ══════════════════════════════════════════════════════ -->
+  <div id="firebase-config-modal" class="m3-scrim" onclick="closeDialog('firebase-config-modal')" role="dialog" aria-modal="true" aria-label="Firebase configuration">
+    <div class="m3-dialog" onclick="event.stopPropagation()" style="padding-bottom:32px;">
+      <div class="m3-dialog-handle"></div>
+      <div class="m3-dialog-title">Firebase Configuration</div>
+      <div class="m3-dialog-body">
+        Paste your Firebase project config object below. Get it from: Firebase Console → Project Settings → Your Apps → SDK setup and configuration → Config.
+      </div>
+
+      <!-- Step-by-step hint -->
+      <div style="background:var(--md-sys-color-surface-container);border-radius:12px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--md-sys-color-on-surface-variant);line-height:1.7;">
+        <strong style="color:var(--md-sys-color-on-surface);">How to get your config:</strong><br>
+        1. Go to <a href="https://console.firebase.google.com" target="_blank" style="color:var(--md-sys-color-primary);">console.firebase.google.com</a><br>
+        2. Create or open your project<br>
+        3. Project Settings → General → Your Apps<br>
+        4. Create a Web App if needed<br>
+        5. Copy the config object and paste below
+      </div>
+
+      <div class="m3-field">
+        <label for="fb-config-input">Firebase Config JSON</label>
+        <textarea id="fb-config-input" rows="8" placeholder='{
+  "apiKey": "AIzaSy...",
+  "authDomain": "your-project.firebaseapp.com",
+  "projectId": "your-project-id",
+  "storageBucket": "your-project.appspot.com",
+  "messagingSenderId": "123456789",
+  "appId": "1:123456789:web:abc123"
+}'></textarea>
+      </div>
+
+      <div class="m3-dialog-actions" style="flex-direction:column;gap:8px;">
+        <button class="m3-btn m3-btn-filled ripple-container full-width" onclick="saveFirebaseConfig()">
+          <span style="font-family:'Material Symbols Rounded';font-size:18px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 20;">save</span>
+          Save &amp; Connect
+        </button>
+        <button class="m3-btn m3-btn-text ripple-container full-width" onclick="closeDialog('firebase-config-modal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       DELETE CONFIRM MODAL
+  ══════════════════════════════════════════════════════ -->
+  <div id="delete-confirm-modal" class="m3-scrim" onclick="closeDialog('delete-confirm-modal')" role="dialog" aria-modal="true" aria-label="Confirm delete">
+    <div class="m3-dialog" onclick="event.stopPropagation()">
+      <div class="m3-dialog-handle"></div>
+      <div class="m3-dialog-title">Delete Event?</div>
+      <div class="m3-dialog-body">
+        This action is permanent and cannot be undone. The event data will be removed from Firestore immediately and all users will lose access to it.
+      </div>
+      <div class="m3-dialog-actions">
+        <button class="m3-btn m3-btn-text ripple-container" onclick="closeDialog('delete-confirm-modal')">Cancel</button>
+        <button class="m3-btn m3-btn-filled ripple-container" onclick="executeDeleteEvent()" style="background:var(--md-sys-color-error);color:var(--md-sys-color-on-error);">
+          <span style="font-family:'Material Symbols Rounded';font-size:18px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 20;">delete</span>
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       BATCH CONFIRM MODAL
+  ══════════════════════════════════════════════════════ -->
+  <div id="batch-confirm-modal" class="m3-scrim" onclick="closeDialog('batch-confirm-modal')" role="dialog" aria-modal="true" aria-label="Confirm batch create">
+    <div class="m3-dialog" onclick="event.stopPropagation()">
+      <div class="m3-dialog-handle"></div>
+      <div class="m3-dialog-title">Create Event Stubs?</div>
+      <div id="batch-confirm-body" class="m3-dialog-body"></div>
+      <div class="m3-dialog-actions">
+        <button class="m3-btn m3-btn-text ripple-container" onclick="closeDialog('batch-confirm-modal')">Cancel</button>
+        <button class="m3-btn m3-btn-filled ripple-container" onclick="executeBatchCreate()" id="batch-confirm-btn">
+          <span style="font-family:'Material Symbols Rounded';font-size:18px;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 20;">auto_fix_high</span>
+          Create All
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#app-root -->
+
+<!-- ══════════════════════════════════════════════════════
+     SCRIPTS
+══════════════════════════════════════════════════════ -->
+<script src="./bible_data.js"></script>
+<script src="./app.js"></script>
+
+<script>
+// ── Admin-specific logic ──
+
+let pendingBatchEvents = [];
+
+// ── Firebase Config Management ──
+function saveFirebaseConfig() {
+  const input = document.getElementById('fb-config-input');
+  if (!input) return;
+
+  let raw = input.value.trim();
+
+  // Remove wrapping variable assignment if pasted directly from Firebase console
+  raw = raw.replace(/^const\s+firebaseConfig\s*=\s*/, '').replace(/;?\s*$/, '');
+
+  try {
+    const cfg = JSON.parse(raw);
+    if (!cfg.apiKey || !cfg.projectId) throw new Error('Missing required fields: apiKey, projectId');
+
+    // Store config in localStorage for both admin and user view
+    localStorage.setItem('church_fb_config', JSON.stringify(cfg));
+
+    closeDialog('firebase-config-modal');
+    showSnackbar('check_circle', 'Firebase config saved! Reconnecting…');
+
+    // Reinitialize Firestore
+    setTimeout(() => location.reload(), 1000);
+  } catch (err) {
+    showSnackbar('error', `Invalid config: ${err.message}`);
+  }
+}
+
+function confirmClearConfig() {
+  if (confirm('Clear saved Firebase config? This will disconnect from Firestore.')) {
+    localStorage.removeItem('church_fb_config');
+    showSnackbar('delete', 'Firebase config cleared. Reloading…');
+    setTimeout(() => location.reload(), 1500);
+  }
+}
+
+// Pre-fill config textarea if already saved
+function prefillConfigTextarea() {
+  const stored = localStorage.getItem('church_fb_config');
+  const el = document.getElementById('fb-config-input');
+  if (stored && el) {
+    el.value = JSON.stringify(JSON.parse(stored), null, 2);
+  }
+}
+
+// ── Admin Form Submit ──
+function handleAdminFormSubmit(e) {
+  e.preventDefault();
+  const form = e.target;
+  const data = {
+    date:      form.date.value,
+    title:     form.title.value.trim(),
+    preacher:  form.preacher.value.trim(),
+    verse:     form.verse.value.trim(),
+    audioUrl:  form.audioUrl.value.trim(),
+    slidesUrl: form.slidesUrl.value.trim(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  // Remove empty fields
+  Object.keys(data).forEach(k => { if (data[k] === '') delete data[k]; });
+
+  if (!data.date || !data.title) {
+    showSnackbar('error', 'Date and Title are required.');
+    return;
+  }
+
+  adminSaveEvent(data).then(ok => {
+    if (ok) {
+      form.reset();
+      const formTitle = document.getElementById('form-section-title');
+      const cancelBtn = document.getElementById('admin-cancel-btn');
+      const submitBtn = document.getElementById('admin-submit-btn');
+      if (formTitle) formTitle.textContent = 'Add New Event';
+      if (cancelBtn) cancelBtn.style.display = 'none';
+      if (submitBtn) submitBtn.textContent = 'Save Event';
+    }
+  });
+}
+
+// Override adminEditEvent to show cancel button in manage.html
+const _origAdminEditEvent = adminEditEvent;
+adminEditEvent = function(docId) {
+  _origAdminEditEvent(docId);
+  const formTitle = document.getElementById('form-section-title');
+  const cancelBtn = document.getElementById('admin-cancel-btn');
+  if (formTitle) formTitle.textContent = 'Edit Event';
+  if (cancelBtn) cancelBtn.style.display = '';
+};
+
+const _origAdminCancelEdit = adminCancelEdit;
+adminCancelEdit = function() {
+  _origAdminCancelEdit();
+  const formTitle = document.getElementById('form-section-title');
+  const cancelBtn = document.getElementById('admin-cancel-btn');
+  if (formTitle) formTitle.textContent = 'Add New Event';
+  if (cancelBtn) cancelBtn.style.display = 'none';
+};
+
+// ── Batch Planning ──
+function generateBatchEvents() {
+  const startVal = document.getElementById('batch-start').value;
+  const endVal   = document.getElementById('batch-end').value;
+  const dow      = parseInt(document.getElementById('batch-dow').value);
+  const titleTpl = document.getElementById('batch-title-template').value || 'Service';
+  const preacher = document.getElementById('batch-preacher').value.trim();
+
+  if (!startVal || !endVal) {
+    showSnackbar('error', 'Please set both start and end dates.');
+    return;
+  }
+
+  const start = new Date(startVal + 'T00:00:00');
+  const end   = new Date(endVal   + 'T00:00:00');
+
+  if (start >= end) {
+    showSnackbar('error', 'End date must be after start date.');
+    return;
+  }
+
+  pendingBatchEvents = [];
+  const cur = new Date(start);
+
+  // Advance to first matching day of week
+  while (cur.getDay() !== dow) {
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  while (cur <= end) {
+    const dateStr = formatDate(cur.getFullYear(), cur.getMonth(), cur.getDate());
+    const title   = titleTpl.replace('{date}', dateStr);
+
+    if (!AppState.events[dateStr]) { // Skip if already exists
+      const event = { date: dateStr, title, updatedAt: new Date().toISOString() };
+      if (preacher) event.preacher = preacher;
+      pendingBatchEvents.push(event);
+    }
+    cur.setDate(cur.getDate() + 7);
+  }
+
+  const preview = document.getElementById('batch-preview');
+  if (pendingBatchEvents.length === 0) {
+    if (preview) preview.innerHTML = '<div class="m3-banner warning"><span class="banner-icon material-symbols-rounded">warning</span>No new dates found. All dates in range may already exist.</div>';
+    return;
+  }
+
+  if (preview) {
+    preview.innerHTML = `
+      <div class="m3-banner" style="margin-bottom:12px;">
+        <span class="banner-icon material-symbols-rounded">event_repeat</span>
+        <div><strong>${pendingBatchEvents.length} event stubs</strong> will be created.</div>
+      </div>
+      <div style="max-height:200px;overflow-y:auto;background:var(--md-sys-color-surface-container);border-radius:12px;padding:8px;">
+        ${pendingBatchEvents.map(e => `
+          <div style="padding:6px 10px;font-size:13px;color:var(--md-sys-color-on-surface);border-bottom:1px solid var(--md-sys-color-outline-variant);">
+            <strong>${e.date}</strong> — ${e.title}
+          </div>`).join('')}
+      </div>
+    `;
+  }
+
+  // Show confirm modal
+  const body = document.getElementById('batch-confirm-body');
+  if (body) body.textContent = `This will create ${pendingBatchEvents.length} event stubs in Firestore. You can edit individual entries and add audio/slide links later.`;
+  openDialog('batch-confirm-modal');
+}
+
+async function executeBatchCreate() {
+  closeDialog('batch-confirm-modal');
+  if (!db) { showSnackbar('error', 'Firebase not connected.'); return; }
+
+  const btn = document.getElementById('batch-confirm-btn');
+  if (btn) btn.disabled = true;
+
+  let created = 0;
+  for (const event of pendingBatchEvents) {
+    try {
+      await db.collection('calendar_events').add(event);
+      created++;
+    } catch (err) {
+      console.warn('[Batch] Failed to create:', event.date, err);
+    }
+  }
+
+  showSnackbar('check_circle', `${created} events created successfully`);
+  pendingBatchEvents = [];
+
+  const preview = document.getElementById('batch-preview');
+  if (preview) preview.innerHTML = '';
+  if (btn) btn.disabled = false;
+
+  // Switch to events tab
+  switchTab('home');
+}
+
+// ── Update event count badge ──
+function updateEventCountBadge() {
+  const badge = document.getElementById('event-count-badge');
+  const count = Object.keys(AppState.events).length;
+  if (badge) badge.textContent = `${count} event${count !== 1 ? 's' : ''}`;
+}
+
+// ── Firebase initialization with admin-specific listeners ──
+function initAdminWithFirebase(cfg) {
+  try {
+    if (!firebase.apps.length) {
+      firebase.initializeApp(cfg);
+    }
+    db = firebase.firestore();
+
+    db.collection('calendar_events')
+      .orderBy('date', 'asc')
+      .onSnapshot(snapshot => {
+        AppState.events = {};
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          AppState.events[data.date] = { id: doc.id, ...data };
+        });
+        renderAdminEventList(AdminState.currentMonthFilter);
+        buildAdminMonthFilters();
+        updateEventCountBadge();
+        updateFirebaseStatus(true);
+
+        const notice = document.getElementById('firebase-config-notice');
+        if (notice) notice.style.display = 'none';
+      }, err => {
+        console.error('[Admin] Firestore error:', err);
+        showSnackbar('error', 'Firestore error: ' + err.message);
+        updateFirebaseStatus(false);
+      });
+
+    console.log('[Admin] Firestore connected ✓');
+  } catch (err) {
+    console.error('[Admin] Firebase init error:', err);
+    updateFirebaseStatus(false);
+    showSnackbar('error', 'Firebase init failed: ' + err.message);
+  }
+}
+
+function updateFirebaseStatus(connected) {
+  const icon   = document.getElementById('fb-status-icon');
+  const badge  = document.getElementById('firestore-status-badge');
+  if (icon)  icon.textContent  = connected ? 'cloud_done' : 'cloud_off';
+  if (badge) badge.textContent = connected ? '● Live' : '○ Offline';
+  if (badge) badge.style.color = connected ? '#2e7d32' : 'var(--md-sys-color-error)';
+}
+
+// ── Scroll → elevate top app bar ──
+document.getElementById('app-main')?.addEventListener('scroll', function() {
+  const bar = document.getElementById('top-app-bar');
+  if (bar) bar.classList.toggle('elevated', this.scrollTop > 0);
+}, { passive: true });
+
+// ── Keyboard shortcuts ──
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeDialog('firebase-config-modal');
+    closeDialog('delete-confirm-modal');
+    closeDialog('batch-confirm-modal');
+  }
+});
+
+// ── Boot sequence ──
+(function() {
+  checkViewportLock();
+  prefillConfigTextarea();
+  updateFirebaseStatus(false);
+
+  const storedConfig = localStorage.getItem('church_fb_config');
+
+  if (storedConfig) {
+    try {
+      const cfg = JSON.parse(storedConfig);
+      const notice = document.getElementById('firebase-config-notice');
+      if (notice) notice.style.display = 'none';
+
+      function loadScript(src, cb) {
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = cb;
+        s.onerror = () => {
+          showSnackbar('error', 'Failed to load Firebase SDK. Check network.');
+          updateFirebaseStatus(false);
+        };
+        document.head.appendChild(s);
+      }
+
+      loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js', () => {
+        loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js', () => {
+          initAdminWithFirebase(cfg);
+        });
+      });
+    } catch (err) {
+      showSnackbar('error', 'Saved Firebase config is invalid. Please reconfigure.');
+    }
+  } else {
+    openDialog('firebase-config-modal');
+  }
+
+  // Init tabs
+  switchTab('home');
+})();
+</script>
+
+</body>
+</html>
