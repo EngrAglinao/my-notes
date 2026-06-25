@@ -33,13 +33,10 @@
     .toolbar-btn em {
       font-family: 'Google Sans', sans-serif !important;
     }
-    /* ── Notes editor: extra bottom breathing room (no bottom nav) ── */
-    #notes-section {
-      padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px)) !important;
+    .toolbar-separator {
+      flex-shrink: 0;
     }
-    #note-editor {
-      min-height: 220px;
-    }
+  </style>
   <title>My Notes</title>
 </head>
 <body>
@@ -426,32 +423,6 @@
      SCRIPTS
 ══════════════════════════════════════════════════════ -->
 
-<!-- Folder prompt guard: intercept display changes BEFORE app.js runs -->
-<script>
-(function() {
-  const DISMISSED_KEY = 'church_folder_prompt_dismissed';
-  const overlay = document.getElementById('folder-prompt-overlay');
-  if (!overlay) return;
-
-  // If already dismissed, keep it hidden and block any future attempt to show it
-  if (localStorage.getItem(DISMISSED_KEY)) {
-    overlay.style.display = 'none';
-
-    // Override the style.display property so initApp() can't re-show it
-    let _display = 'none';
-    Object.defineProperty(overlay.style, 'display', {
-      get() { return _display; },
-      set(v) {
-        // Only allow hiding; never allow showing again
-        if (v === 'none' || v === '') { _display = 'none'; }
-        // Silently ignore any attempt to show (e.g. display='flex' or 'block')
-      },
-      configurable: true
-    });
-  }
-})();
-</script>
-
 <!-- Bible data (offline scripture) -->
 <script src="./bible_data.js"></script>
 
@@ -569,38 +540,45 @@ document.getElementById('app-main')?.addEventListener('scroll', function() {
   updateBarForTab('home');
 })();
 
-// ── Folder prompt: persist dismissal on skip or folder chosen ──
+// ── Folder prompt: never show again once dismissed or folder chosen ──
 (function() {
   const DISMISSED_KEY = 'church_folder_prompt_dismissed';
 
-  function markDismissed() {
-    localStorage.setItem(DISMISSED_KEY, '1');
-    // Release the display lock so the overlay can be hidden normally
-    const overlay = document.getElementById('folder-prompt-overlay');
-    if (overlay) {
-      try { Object.defineProperty(overlay.style, 'display', { get: undefined, set: undefined, configurable: true }); } catch(e) {}
-      overlay.style.display = 'none';
-    }
-  }
-
-  // Patch closeFolderPrompt (Skip for Now)
+  // Patch closeFolderPrompt to persist the dismissal
   const origClose = window.closeFolderPrompt;
   window.closeFolderPrompt = function() {
-    markDismissed();
+    localStorage.setItem(DISMISSED_KEY, '1');
     if (origClose) origClose();
+    else {
+      const el = document.getElementById('folder-prompt-overlay');
+      if (el) el.style.display = 'none';
+    }
   };
 
-  // Patch requestFolderAccess (Choose Folder)
+  // Patch requestFolderAccess to persist after a successful pick
   const origRequest = window.requestFolderAccess;
   window.requestFolderAccess = function() {
     const result = origRequest ? origRequest() : undefined;
+    // If it returns a Promise (async folder picker), mark on resolve
     if (result && typeof result.then === 'function') {
-      result.then(markDismissed).catch(() => {});
+      result.then(() => localStorage.setItem(DISMISSED_KEY, '1')).catch(() => {});
     } else {
-      markDismissed();
+      // Synchronous path — mark immediately (folder picker either succeeded or user cancelled;
+      // the prompt hiding is handled by the original function)
+      localStorage.setItem(DISMISSED_KEY, '1');
     }
     return result;
   };
+
+  // Suppress the prompt on this page load if already dismissed
+  function maybeHidePrompt() {
+    if (localStorage.getItem(DISMISSED_KEY)) {
+      const el = document.getElementById('folder-prompt-overlay');
+      if (el) el.style.display = 'none';
+    }
+  }
+  // Run after app init fires (slight delay to let initApp show it first)
+  setTimeout(maybeHidePrompt, 0);
 })();
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
