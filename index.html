@@ -11,7 +11,33 @@
   <meta name="apple-mobile-web-app-title" content="ChurchApp">
   <link rel="manifest" href="./manifest.json">
   <link rel="stylesheet" href="./styles.css">
-  <title>Church — Media &amp; Notes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── Rich text toolbar: single scrollable row, Google Sans ── */
+    .rich-editor-toolbar {
+      display: flex !important;
+      flex-wrap: nowrap !important;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      gap: 2px !important;
+      padding: 4px 2px;
+    }
+    .rich-editor-toolbar::-webkit-scrollbar { display: none; }
+    .toolbar-btn {
+      flex-shrink: 0;
+      font-family: 'Google Sans', sans-serif !important;
+    }
+    .toolbar-btn strong,
+    .toolbar-btn em {
+      font-family: 'Google Sans', sans-serif !important;
+    }
+    .toolbar-separator {
+      flex-shrink: 0;
+    }
+  </style>
+  <title>My Notes</title>
 </head>
 <body>
 
@@ -61,21 +87,25 @@
 
   <!-- ── TOP APP BAR ── -->
   <header class="m3-top-app-bar" id="top-app-bar" role="banner">
-    <button class="m3-icon-btn ripple-container" onclick="openMonthPicker()" aria-label="Select month and year" title="Navigate to month">
+    <!-- Home view: month picker | Settings view: back button -->
+    <button class="m3-icon-btn ripple-container" id="bar-left-btn-home" onclick="openMonthPicker()" aria-label="Select month and year" title="Navigate to month">
       date_range
+    </button>
+    <button class="m3-icon-btn ripple-container" id="bar-left-btn-back" onclick="switchTab('home')" aria-label="Back to home" title="Back" style="display:none;">
+      arrow_back
     </button>
 
     <div class="bar-title">
-      <span id="bar-title-main">Church Media</span>
+      <span id="bar-title-main">My Notes</span>
       <span class="subtitle" id="bar-subtitle">Tap a date to begin</span>
     </div>
 
-    <button class="m3-icon-btn ripple-container" id="calendar-toggle-btn" onclick="toggleCalendar()" aria-label="Toggle calendar" title="Show/hide calendar">
+    <!-- Home view: calendar toggle + settings | Settings view: hidden -->
+    <button class="m3-icon-btn ripple-container bar-home-only" id="calendar-toggle-btn" onclick="toggleCalendar()" aria-label="Toggle calendar" title="Show/hide calendar">
       calendar_month
     </button>
-
-    <button class="m3-icon-btn ripple-container" onclick="openDialog('app-menu-modal')" aria-label="More options">
-      more_vert
+    <button class="m3-icon-btn ripple-container bar-home-only" onclick="switchTab('settings')" aria-label="Settings" title="Settings">
+      settings
     </button>
   </header>
 
@@ -314,23 +344,7 @@
     </div>
   </main>
 
-  <!-- ══════════════════════════════════════════════════════
-       BOTTOM NAVIGATION BAR
-  ══════════════════════════════════════════════════════ -->
-  <nav class="m3-nav-bar" role="navigation" aria-label="Main navigation">
-    <button class="m3-nav-item active ripple-container" data-tab="home" onclick="switchTab('home')" aria-label="Home">
-      <div class="nav-indicator">
-        <span class="nav-icon">home</span>
-      </div>
-      <span class="nav-label">Home</span>
-    </button>
-    <button class="m3-nav-item ripple-container" data-tab="settings" onclick="switchTab('settings')" aria-label="Settings">
-      <div class="nav-indicator">
-        <span class="nav-icon">settings</span>
-      </div>
-      <span class="nav-label">Settings</span>
-    </button>
-  </nav>
+  <!-- bottom nav removed -->
 
   <!-- ══════════════════════════════════════════════════════
        PWA INSTALL BANNER
@@ -375,37 +389,7 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════
-       APP MENU MODAL
-  ══════════════════════════════════════════════════════ -->
-  <div id="app-menu-modal" class="m3-scrim" onclick="closeDialog('app-menu-modal')" role="dialog" aria-modal="true" aria-label="App menu">
-    <div class="m3-dialog" onclick="event.stopPropagation()" style="padding-bottom:32px;">
-      <div class="m3-dialog-handle"></div>
-      <div class="m3-dialog-title" style="margin-bottom:16px;">Options</div>
-
-      <div style="display:flex;flex-direction:column;gap:4px;">
-        <button class="m3-btn m3-btn-text ripple-container" onclick="toggleCalendar();closeDialog('app-menu-modal')" style="justify-content:flex-start;padding:0 12px;color:var(--md-sys-color-on-surface);">
-          <span class="material-symbols-rounded" style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--md-sys-color-primary);">calendar_month</span>
-          Toggle Calendar
-        </button>
-        <button class="m3-btn m3-btn-text ripple-container" onclick="requestFolderAccess();closeDialog('app-menu-modal')" style="justify-content:flex-start;padding:0 12px;color:var(--md-sys-color-on-surface);">
-          <span class="material-symbols-rounded" style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--md-sys-color-primary);">folder_open</span>
-          Change Notes Folder
-        </button>
-        <button class="m3-btn m3-btn-text ripple-container" onclick="exportNotes();closeDialog('app-menu-modal')" style="justify-content:flex-start;padding:0 12px;color:var(--md-sys-color-on-surface);">
-          <span class="material-symbols-rounded" style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--md-sys-color-primary);">download</span>
-          Export Notes
-        </button>
-        <div class="divider" style="margin:8px 0;"></div>
-        <a href="./manage.html" style="text-decoration:none;">
-          <button class="m3-btn m3-btn-text ripple-container full-width" style="justify-content:flex-start;padding:0 12px;color:var(--md-sys-color-on-surface);">
-            <span class="material-symbols-rounded" style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--md-sys-color-primary);">admin_panel_settings</span>
-            Admin Panel
-          </button>
-        </a>
-      </div>
-    </div>
-  </div>
+  <!-- app-menu-modal removed (settings button in top bar replaces it) -->
 
   <!-- ══════════════════════════════════════════════════════
        BIBLE VERSE MODAL
@@ -525,12 +509,81 @@ document.getElementById('app-main')?.addEventListener('scroll', function() {
   if (bar) bar.classList.toggle('elevated', this.scrollTop > 0);
 }, { passive: true });
 
-// ── Keyboard shortcut helpers ──
+// ── Tab switch: update top bar buttons ──
+// Patch switchTab to also toggle bar button visibility
+(function() {
+  const _origSwitch = typeof switchTab === 'function' ? switchTab : null;
+  function updateBarForTab(tab) {
+    const homeBtn   = document.getElementById('bar-left-btn-home');
+    const backBtn   = document.getElementById('bar-left-btn-back');
+    const homeBtns  = document.querySelectorAll('.bar-home-only');
+    const subtitle  = document.getElementById('bar-subtitle');
+    if (tab === 'settings') {
+      if (homeBtn) homeBtn.style.display = 'none';
+      if (backBtn) backBtn.style.display = '';
+      homeBtns.forEach(b => b.style.display = 'none');
+      if (subtitle) subtitle.style.display = 'none';
+    } else {
+      if (homeBtn) homeBtn.style.display = '';
+      if (backBtn) backBtn.style.display = 'none';
+      homeBtns.forEach(b => b.style.display = '');
+      if (subtitle) subtitle.style.display = '';
+    }
+  }
+  // Override switchTab globally
+  const origSwitchTab = window.switchTab;
+  window.switchTab = function(tab) {
+    if (origSwitchTab) origSwitchTab(tab);
+    updateBarForTab(tab);
+  };
+  // Apply on first load
+  updateBarForTab('home');
+})();
+
+// ── Folder prompt: never show again once dismissed or folder chosen ──
+(function() {
+  const DISMISSED_KEY = 'church_folder_prompt_dismissed';
+
+  // Patch closeFolderPrompt to persist the dismissal
+  const origClose = window.closeFolderPrompt;
+  window.closeFolderPrompt = function() {
+    localStorage.setItem(DISMISSED_KEY, '1');
+    if (origClose) origClose();
+    else {
+      const el = document.getElementById('folder-prompt-overlay');
+      if (el) el.style.display = 'none';
+    }
+  };
+
+  // Patch requestFolderAccess to persist after a successful pick
+  const origRequest = window.requestFolderAccess;
+  window.requestFolderAccess = function() {
+    const result = origRequest ? origRequest() : undefined;
+    // If it returns a Promise (async folder picker), mark on resolve
+    if (result && typeof result.then === 'function') {
+      result.then(() => localStorage.setItem(DISMISSED_KEY, '1')).catch(() => {});
+    } else {
+      // Synchronous path — mark immediately (folder picker either succeeded or user cancelled;
+      // the prompt hiding is handled by the original function)
+      localStorage.setItem(DISMISSED_KEY, '1');
+    }
+    return result;
+  };
+
+  // Suppress the prompt on this page load if already dismissed
+  function maybeHidePrompt() {
+    if (localStorage.getItem(DISMISSED_KEY)) {
+      const el = document.getElementById('folder-prompt-overlay');
+      if (el) el.style.display = 'none';
+    }
+  }
+  // Run after app init fires (slight delay to let initApp show it first)
+  setTimeout(maybeHidePrompt, 0);
+})();
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     closeBibleModal();
     closeDialog('month-picker-modal');
-    closeDialog('app-menu-modal');
   }
 });
 </script>
