@@ -12,7 +12,7 @@
  */
 
 const CACHE_NAME = 'church-pwa-v1.0.0';
-const CACHE_BASE_URL = '/my-notes/'; // Change to '/your-repo-name/' for GitHub Pages subpath
+const CACHE_BASE_URL = './'; // Change to '/your-repo-name/' for GitHub Pages subpath
 
 const STATIC_ASSETS = [
   CACHE_BASE_URL,
